@@ -1,8 +1,9 @@
+(() => {
 // ODMR Spin-1 Physics Engine
 // Hamiltonian: H = D·S_z² + γB·S_z
 // All internal units: MHz (rates/frequencies), microseconds (time), mT (field)
 
-export const CONSTANTS = {
+const CONSTANTS = {
     D: 2870,         // Zero-field splitting in MHz (2.87 GHz)
     gamma: 28.025,   // Gyromagnetic ratio in MHz/mT (= 28.025 GHz/T)
 };
@@ -17,8 +18,8 @@ const OPTICAL_RATES = {
     kSingletPm: 0.5,
 };
 
-export const DEFAULTS = {
-    omega: 2,           // Rabi frequency (MHz) — start narrow; increase to see power broadening
+const DEFAULTS = {
+    omega: 0.15,        // Rabi frequency (MHz) — manuscript anchor: ~-20 dBm corresponds to sub-MHz drive
     omegaMW: 2870,      // MW frequency (MHz)
     thetaDeg: 45,       // Polarization angle (degrees) — linear
     gammaP: 10,         // Optical pumping rate (MHz)
@@ -52,7 +53,7 @@ const IDX = Object.freeze({
 });
 
 /** Convert spherical angles to Cartesian B vector */
-export function bVectorFromAngles(Bmag, Btheta, Bphi) {
+function bVectorFromAngles(Bmag, Btheta, Bphi) {
     const t = Btheta * Math.PI / 180;
     const p = Bphi * Math.PI / 180;
     return [
@@ -169,10 +170,14 @@ function solveLinearSystem(matrix, rhs) {
 }
 
 function populationsFromState(state) {
+    const groundTotal = state[IDX.gPlus] + state[IDX.gZero] + state[IDX.gMinus];
+    if (groundTotal <= 1e-15) {
+        return { rhoPlus: 1 / 3, rhoZero: 1 / 3, rhoMinus: 1 / 3 };
+    }
     return {
-        rhoPlus: state[IDX.gPlus],
-        rhoZero: state[IDX.gZero],
-        rhoMinus: state[IDX.gMinus],
+        rhoPlus: state[IDX.gPlus] / groundTotal,
+        rhoZero: state[IDX.gZero] / groundTotal,
+        rhoMinus: state[IDX.gMinus] / groundTotal,
     };
 }
 
@@ -194,18 +199,18 @@ function steadyStateForB(params, Bparallel) {
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /** Transition rates for single-NV mode (uses params.B scalar). */
-export function computeTransitionRates(params) {
+function computeTransitionRates(params) {
     const rates = transitionRatesForB(params, params.B);
     return { ...rates, deltaPlus: params.omegaMW - rates.freqPlus, deltaMinus: params.omegaMW - rates.freqMinus };
 }
 
 /** Steady-state populations for single-NV mode. */
-export function computeSteadyState(params) {
+function computeSteadyState(params) {
     return steadyStateForB(params, params.B);
 }
 
 /** Rate equations RHS for ODE integrator (single-NV). */
-export function rateEquationsRHS(state, params) {
+function rateEquationsRHS(state, params) {
     const matrix = buildRateMatrix(params, params.B);
     return matrix.map(row =>
         row.reduce((sum, coeff, i) => sum + coeff * state[i], 0)
@@ -217,7 +222,7 @@ export function rateEquationsRHS(state, params) {
  * Returns raw rhoZero, ODMR contrast (%), and resonance frequency markers.
  * Contrast = (ρ₀_off − ρ₀(f)) / ρ₀_off × 100
  */
-export function computeODMRSpectrum(params, freqMin, freqMax, nPoints) {
+function computeODMRSpectrum(params, freqMin, freqMax, nPoints) {
     const rhoZero_off = steadyStateForB({ ...params, omega: 0 }, params.B).rhoZero;
     const step = (freqMax - freqMin) / (nPoints - 1);
 
@@ -238,7 +243,7 @@ export function computeODMRSpectrum(params, freqMin, freqMax, nPoints) {
  * ODMR spectrum for NV ensemble (4 orientations → 8 peaks).
  * B field given as magnitude + spherical angles; equal weight per orientation.
  */
-export function computeODMRSpectrumEnsemble(params, freqMin, freqMax, nPoints) {
+function computeODMRSpectrumEnsemble(params, freqMin, freqMax, nPoints) {
     const BVec = bVectorFromAngles(params.Bmag, params.Btheta, params.Bphi);
     const Bparallels = NV_ORIENTATIONS.map(u => projectB(BVec, u));
 
@@ -273,7 +278,7 @@ export function computeODMRSpectrumEnsemble(params, freqMin, freqMax, nPoints) {
  * Compute FWHM (MHz) and peak on-resonance contrast (%) for both transitions.
  * FWHM = 2√(1 + Ω±² T₁T₂) / T₂  (power-broadened Lorentzian half-width)
  */
-export function computeLinewidths(params) {
+function computeLinewidths(params) {
     const { omega, thetaDeg, T1, T2, gammaP } = params;
     const thetaRad = thetaDeg * Math.PI / 180;
     const omegaPlus  = omega * Math.cos(thetaRad);
@@ -301,7 +306,7 @@ export function computeLinewidths(params) {
  * Compute the off-resonance baseline populations (omega = 0).
  * Used by bar chart to show fractional change.
  */
-export function computeBaseline(params) {
+function computeBaseline(params) {
     if (params.ensembleMode) {
         const BVec = bVectorFromAngles(params.Bmag, params.Btheta, params.Bphi);
         const Bparallels = NV_ORIENTATIONS.map(u => projectB(BVec, u));
@@ -317,3 +322,17 @@ export function computeBaseline(params) {
     }
     return steadyStateForB({ ...params, omega: 0 }, params.B);
 }
+
+window.ODMRPhysics = {
+    CONSTANTS,
+    DEFAULTS,
+    bVectorFromAngles,
+    computeTransitionRates,
+    computeSteadyState,
+    rateEquationsRHS,
+    computeODMRSpectrum,
+    computeODMRSpectrumEnsemble,
+    computeLinewidths,
+    computeBaseline,
+};
+})();

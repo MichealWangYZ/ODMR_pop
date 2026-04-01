@@ -1,26 +1,27 @@
+(() => {
 // UI: slider bindings, parameter reading, event wiring
 
-import { DEFAULTS } from './physics.js';
+const { DEFAULTS: PHYSICS_DEFAULTS } = window.ODMRPhysics;
 
 // ─── Slider definitions ───────────────────────────────────────────────────────
 
 const SLIDERS_COMMON = [
-    { id: 'omega',    label: 'Rabi Frequency \u03A9',  min: 0,   max: 5, step: 0.1, default: DEFAULTS.omega,    unit: 'MHz' },
-    { id: 'omegaMW',  label: 'MW Frequency \u03C9_MW', min: 2600, max: 3200, step: 1, default: DEFAULTS.omegaMW,  unit: 'MHz', displayFn: v => (v / 1000).toFixed(3) + ' GHz' },
-    { id: 'thetaDeg', label: 'Polarization \u03B8',    min: 0,   max: 90,  step: 1,   default: DEFAULTS.thetaDeg, unit: '\u00B0', polLabels: true },
-    { id: 'gammaP',   label: 'Pumping Rate \u0393\u209A', min: 0, max: 20, step: 0.1, default: DEFAULTS.gammaP,  unit: 'MHz' },
-    { id: 'T1', label: 'T\u2081 Relaxation', min: -1, max: 2,  step: 0.01, default: Math.log10(DEFAULTS.T1), log: true, unit: '\u03BCs' },
-    { id: 'T2', label: 'T\u2082 Dephasing',  min: -3, max: 1,  step: 0.01, default: Math.log10(DEFAULTS.T2), log: true, unit: '\u03BCs' },
+    { id: 'omega',    label: 'Rabi Frequency \u03A9',  min: 0,   max: 5, step: 0.1, default: PHYSICS_DEFAULTS.omega,    unit: 'MHz' },
+    { id: 'omegaMW',  label: 'MW Frequency \u03C9_MW', min: 2600, max: 3200, step: 1, default: PHYSICS_DEFAULTS.omegaMW,  unit: 'MHz', displayFn: v => (v / 1000).toFixed(3) + ' GHz' },
+    { id: 'thetaDeg', label: 'Polarization \u03B8',    min: 0,   max: 90,  step: 1,   default: PHYSICS_DEFAULTS.thetaDeg, unit: '\u00B0', polLabels: true },
+    { id: 'gammaP',   label: 'Pumping Rate \u0393\u209A', min: 0, max: 20, step: 0.1, default: PHYSICS_DEFAULTS.gammaP,  unit: 'MHz' },
+    { id: 'T1', label: 'T\u2081 Relaxation', min: -1, max: 2,  step: 0.01, default: Math.log10(PHYSICS_DEFAULTS.T1), log: true, unit: '\u03BCs' },
+    { id: 'T2', label: 'T\u2082 Dephasing',  min: -3, max: 1,  step: 0.01, default: Math.log10(PHYSICS_DEFAULTS.T2), log: true, unit: '\u03BCs' },
 ];
 
 const SLIDERS_SINGLE = [
-    { id: 'B', label: 'Field B', min: 0, max: 15, step: 0.1, default: DEFAULTS.B, unit: 'mT', group: 'single' },
+    { id: 'B', label: 'Field B', min: 0, max: 15, step: 0.1, default: PHYSICS_DEFAULTS.B, unit: 'mT', group: 'single' },
 ];
 
 const SLIDERS_ENSEMBLE = [
-    { id: 'Bmag',   label: '|B| Magnitude', min: 0,   max: 15,  step: 0.1, default: DEFAULTS.Bmag,   unit: 'mT',    group: 'ensemble' },
-    { id: 'Btheta', label: 'B polar \u03B8_B',  min: 0,   max: 90,  step: 1,   default: DEFAULTS.Btheta, unit: '\u00B0', group: 'ensemble' },
-    { id: 'Bphi',   label: 'B azimuth \u03C6_B', min: 0,   max: 360, step: 1,   default: DEFAULTS.Bphi,   unit: '\u00B0', group: 'ensemble' },
+    { id: 'Bmag',   label: '|B| Magnitude', min: 0,   max: 15,  step: 0.1, default: PHYSICS_DEFAULTS.Bmag,   unit: 'mT',    group: 'ensemble' },
+    { id: 'Btheta', label: 'B polar \u03B8_B',  min: 0,   max: 90,  step: 1,   default: PHYSICS_DEFAULTS.Btheta, unit: '\u00B0', group: 'ensemble' },
+    { id: 'Bphi',   label: 'B azimuth \u03C6_B', min: 0,   max: 360, step: 1,   default: PHYSICS_DEFAULTS.Bphi,   unit: '\u00B0', group: 'ensemble' },
 ];
 
 const ALL_SLIDERS = [...SLIDERS_COMMON, ...SLIDERS_SINGLE, ...SLIDERS_ENSEMBLE];
@@ -31,7 +32,7 @@ function clamp(value, min, max) {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-export function readParams() {
+function readParams() {
     const params = {};
     for (const cfg of ALL_SLIDERS) {
         const el = document.getElementById('slider-' + cfg.id);
@@ -45,7 +46,7 @@ export function readParams() {
     return params;
 }
 
-export function updateDisplayValues() {
+function updateDisplayValues() {
     for (const cfg of ALL_SLIDERS) {
         const el = document.getElementById('slider-' + cfg.id);
         const display = document.getElementById('value-' + cfg.id);
@@ -63,7 +64,7 @@ export function updateDisplayValues() {
     }
 }
 
-export function initSliders(onChange) {
+function initSliders(onChange) {
     for (const cfg of ALL_SLIDERS) {
         const el = document.getElementById('slider-' + cfg.id);
         if (!el) continue;
@@ -76,7 +77,7 @@ export function initSliders(onChange) {
     updateDisplayValues();
 }
 
-export function resetSliders(onChange) {
+function resetSliders(onChange) {
     for (const cfg of ALL_SLIDERS) {
         const el = document.getElementById('slider-' + cfg.id);
         if (el) el.value = cfg.default;
@@ -89,7 +90,7 @@ export function resetSliders(onChange) {
  * Toggle between single-NV and ensemble mode.
  * Shows/hides the appropriate field-direction controls.
  */
-export function toggleEnsembleMode(onChange) {
+function toggleEnsembleMode(onChange) {
     const btn = document.getElementById('btn-ensemble');
     const isNowEnsemble = btn.dataset.active !== 'true';
     btn.dataset.active = isNowEnsemble;
@@ -100,3 +101,12 @@ export function toggleEnsembleMode(onChange) {
     document.getElementById('field-ensemble').style.display = isNowEnsemble ? 'block' : 'none';
     onChange();
 }
+
+window.ODMRUI = {
+    readParams,
+    updateDisplayValues,
+    initSliders,
+    resetSliders,
+    toggleEnsembleMode,
+};
+})();

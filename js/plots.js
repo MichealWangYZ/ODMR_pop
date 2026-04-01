@@ -1,3 +1,4 @@
+(() => {
 // Plotly chart initialization and update
 
 const COLORS = {
@@ -23,13 +24,13 @@ const CONFIG = { responsive: true, displayModeBar: false };
 
 // ─── Bar chart ───────────────────────────────────────────────────────────────
 
-export function initBarChart(divId) {
+function initBarChart(divId) {
     Plotly.newPlot(divId, _barTraces({ rhoPlus: 1/3, rhoZero: 1/3, rhoMinus: 1/3 },
                                       { rhoPlus: 1/3, rhoZero: 1/3, rhoMinus: 1/3 }),
         _barLayout(), CONFIG);
 }
 
-export function updateBarChart(divId, pops, baseline) {
+function updateBarChart(divId, pops, baseline) {
     Plotly.react(divId, _barTraces(pops, baseline), _barLayout(), CONFIG);
 }
 
@@ -96,13 +97,13 @@ function _barLayout() {
 
 // ─── ODMR spectrum ────────────────────────────────────────────────────────────
 
-export function initODMRSpectrum(divId) {
+function initODMRSpectrum(divId) {
     Plotly.newPlot(divId, [{ x: [], y: [], type: 'scatter', mode: 'lines',
         line: { color: COLORS.accent, width: 2 }, name: 'Dip Contrast (%)' }],
         _spectrumLayout([], [], -0.01), CONFIG);
 }
 
-export function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths) {
+function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths) {
     const freqGHz = spectrumData.frequencies.map(f => f / 1000);
     const currentGHz = currentFreq / 1000;
     const dipValues = spectrumData.contrastValues.map(v => -v);
@@ -196,11 +197,11 @@ function _spectrumLayout(shapes, annotations, yMin) {
 
 // ─── Time evolution ────────────────────────────────────────────────────────────
 
-export function initTimeEvolution(divId) {
+function initTimeEvolution(divId) {
     Plotly.newPlot(divId, _timeTraces([], []), _timeLayout(), CONFIG);
 }
 
-export function updateTimeEvolution(divId, times, states) {
+function updateTimeEvolution(divId, times, states) {
     Plotly.react(divId, _timeTraces(times, states), _timeLayout(), CONFIG);
 }
 
@@ -225,3 +226,13 @@ function _timeLayout() {
         legend: { x: 0.78, y: 0.95 },
     };
 }
+
+window.ODMRPlots = {
+    initBarChart,
+    updateBarChart,
+    initODMRSpectrum,
+    updateODMRSpectrum,
+    initTimeEvolution,
+    updateTimeEvolution,
+};
+})();

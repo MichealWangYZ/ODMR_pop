@@ -1,3 +1,4 @@
+(() => {
 // 4th-order Runge-Kutta ODE integrator
 
 /**
@@ -31,7 +32,7 @@ function rk4Step(f, state, dt, params) {
  * Integrate ODE from t=0 to t=tMax with step dt.
  * Returns { times, states } where states[i] = state at times[i].
  */
-export function integrate(f, initialState, tMax, dt, params) {
+function integrate(f, initialState, tMax, dt, params) {
     const times = [0];
     const states = [initialState.slice()];
     let state = initialState.slice();
@@ -47,3 +48,6 @@ export function integrate(f, initialState, tMax, dt, params) {
 
     return { times, states };
 }
+
+window.ODMRSolver = { integrate };
+})();

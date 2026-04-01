@@ -1,17 +1,24 @@
+(() => {
 // Entry point
 
-import {
-    computeSteadyState, computeODMRSpectrum,
-    computeODMRSpectrumEnsemble, computeBaseline,
-    computeLinewidths, rateEquationsRHS,
-} from './physics.js';
-import { integrate } from './solver.js';
-import {
-    initBarChart, updateBarChart,
-    initODMRSpectrum, updateODMRSpectrum,
-    initTimeEvolution, updateTimeEvolution,
-} from './plots.js';
-import { initSliders, readParams, resetSliders, toggleEnsembleMode } from './ui.js';
+const {
+    computeSteadyState,
+    computeODMRSpectrum,
+    computeODMRSpectrumEnsemble,
+    computeBaseline,
+    computeLinewidths,
+    rateEquationsRHS,
+} = window.ODMRPhysics;
+const { integrate } = window.ODMRSolver;
+const {
+    initBarChart,
+    updateBarChart,
+    initODMRSpectrum,
+    updateODMRSpectrum,
+    initTimeEvolution,
+    updateTimeEvolution,
+} = window.ODMRPlots;
+const { initSliders, readParams, resetSliders, toggleEnsembleMode } = window.ODMRUI;
 
 let showTimeEvolution = false;
 let spectrumTimer = null;
@@ -106,3 +113,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fullUpdate();
 });
+})();
