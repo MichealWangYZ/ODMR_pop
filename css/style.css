@@ -161,11 +161,28 @@ header p {
     height: 280px;
 }
 
+.chart-container .plot-tall {
+    height: 320px;
+}
+
 #time-evolution-container {
     display: none;
 }
 
 /* Hamiltonian display */
+.mode-hint {
+    font-size: 0.75em;
+    color: #8888aa;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+#btn-ensemble.active {
+    background: #4ecdc4;
+    color: #1a1a2e;
+    border-color: #4ecdc4;
+}
+
 .hamiltonian {
     margin-top: 20px;
     padding: 12px;

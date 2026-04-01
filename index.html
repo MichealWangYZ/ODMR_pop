@@ -14,101 +14,124 @@
     </header>
 
     <div class="app-container">
-        <!-- Left panel: controls -->
+        <!-- ── Left panel: controls ─────────────────────────────────────────── -->
         <aside class="controls">
+
+            <!-- Mode toggle -->
+            <div class="control-group">
+                <h3>Mode</h3>
+                <div class="button-row">
+                    <button id="btn-ensemble" data-active="false">Mode: Single NV</button>
+                </div>
+                <p class="mode-hint" id="mode-hint-single">Single NV orientation along applied field.</p>
+                <p class="mode-hint" id="mode-hint-ensemble" style="display:none">
+                    4 NV orientations along &lang;111&rang; &mdash; 8 resonance peaks.
+                    Set B direction to lift degeneracy.
+                </p>
+            </div>
+
+            <!-- Microwave -->
             <div class="control-group">
                 <h3>Microwave Drive</h3>
 
                 <div class="slider-row">
-                    <label>
-                        <span>Rabi Frequency &Omega;</span>
-                        <span class="value" id="value-omega"></span>
-                    </label>
+                    <label><span>Rabi Frequency &Omega;</span><span class="value" id="value-omega"></span></label>
                     <input type="range" id="slider-omega">
                 </div>
 
                 <div class="slider-row">
-                    <label>
-                        <span>MW Frequency &omega;<sub>MW</sub></span>
-                        <span class="value" id="value-omegaMW"></span>
-                    </label>
+                    <label><span>MW Frequency &omega;<sub>MW</sub></span><span class="value" id="value-omegaMW"></span></label>
                     <input type="range" id="slider-omegaMW">
                 </div>
 
                 <div class="slider-row">
-                    <label>
-                        <span>Polarization &theta;</span>
-                        <span class="value" id="value-thetaDeg"></span>
-                    </label>
+                    <label><span>Polarization &theta;</span><span class="value" id="value-thetaDeg"></span></label>
                     <input type="range" id="slider-thetaDeg">
-                    <div class="pol-labels">
-                        <span>&sigma;+</span>
-                        <span>linear</span>
-                        <span>&sigma;&minus;</span>
-                    </div>
+                    <div class="pol-labels"><span>&sigma;+</span><span>linear</span><span>&sigma;&minus;</span></div>
                 </div>
             </div>
 
+            <!-- System params -->
             <div class="control-group">
                 <h3>System Parameters</h3>
 
                 <div class="slider-row">
-                    <label>
-                        <span>Pumping Rate &Gamma;<sub>p</sub></span>
-                        <span class="value" id="value-gammaP"></span>
-                    </label>
+                    <label><span>Pumping Rate &Gamma;<sub>p</sub></span><span class="value" id="value-gammaP"></span></label>
                     <input type="range" id="slider-gammaP">
                 </div>
 
                 <div class="slider-row">
-                    <label>
-                        <span>T<sub>1</sub> Relaxation</span>
-                        <span class="value" id="value-T1"></span>
-                    </label>
+                    <label><span>T<sub>1</sub> Relaxation</span><span class="value" id="value-T1"></span></label>
                     <input type="range" id="slider-T1">
                 </div>
 
                 <div class="slider-row">
-                    <label>
-                        <span>T<sub>2</sub> Dephasing</span>
-                        <span class="value" id="value-T2"></span>
-                    </label>
+                    <label><span>T<sub>2</sub> Dephasing</span><span class="value" id="value-T2"></span></label>
                     <input type="range" id="slider-T2">
                 </div>
+            </div>
 
+            <!-- Magnetic field — single NV -->
+            <div class="control-group" id="field-single">
+                <h3>Magnetic Field</h3>
                 <div class="slider-row">
-                    <label>
-                        <span>Magnetic Field B</span>
-                        <span class="value" id="value-B"></span>
-                    </label>
+                    <label><span>Field B</span><span class="value" id="value-B"></span></label>
                     <input type="range" id="slider-B">
                 </div>
             </div>
 
-            <div class="button-row">
-                <button id="btn-reset">Reset Defaults</button>
-                <button id="btn-time-evo">Show Time Evolution</button>
+            <!-- Magnetic field — ensemble (hidden by default) -->
+            <div class="control-group" id="field-ensemble" style="display:none">
+                <h3>Magnetic Field Direction</h3>
+                <div class="slider-row">
+                    <label><span>|B| Magnitude</span><span class="value" id="value-Bmag"></span></label>
+                    <input type="range" id="slider-Bmag">
+                </div>
+                <div class="slider-row">
+                    <label><span>Polar angle &theta;<sub>B</sub></span><span class="value" id="value-Btheta"></span></label>
+                    <input type="range" id="slider-Btheta">
+                    <div class="pol-labels"><span>[001]</span><span></span><span>[100]</span></div>
+                </div>
+                <div class="slider-row">
+                    <label><span>Azimuth &phi;<sub>B</sub></span><span class="value" id="value-Bphi"></span></label>
+                    <input type="range" id="slider-Bphi">
+                </div>
+                <p class="mode-hint">
+                    Tip: use &theta;<sub>B</sub>&asymp;80&deg;, &phi;<sub>B</sub>&asymp;27&deg; for 8 distinct peaks.
+                    High symmetry directions (e.g. [111]) merge some peaks.
+                </p>
             </div>
 
+            <!-- Buttons -->
+            <div class="button-row" style="margin-top:8px">
+                <button id="btn-reset">Reset Defaults</button>
+                <button id="btn-time-evo">Show Time Evo</button>
+            </div>
+
+            <!-- Physics reference -->
             <div class="hamiltonian">
-                <div><span class="eq">H = D&middot;S<sub>z</sub>&sup2; + &gamma;B&middot;S<sub>z</sub></span></div>
+                <div><span class="eq">H = D&middot;S<sub>z</sub>&sup2; + &gamma;B<sub>&parallel;</sub>&middot;S<sub>z</sub></span></div>
                 <div>D = 2.87 GHz &nbsp;|&nbsp; &gamma; = 28.025 GHz/T</div>
-                <div>&omega;<sub>&plusmn;</sub> = D &plusmn; &gamma;B</div>
-                <div style="margin-top:6px">
-                    W<sub>&plusmn;</sub> = &Omega;<sub>&plusmn;</sub>&sup2;T<sub>2</sub> / (1 + &Delta;<sub>&plusmn;</sub>&sup2;T<sub>2</sub>&sup2; + &Omega;<sub>&plusmn;</sub>&sup2;T<sub>1</sub>T<sub>2</sub>)
+                <div>&omega;<sub>&plusmn;</sub> = D &plusmn; &gamma;B<sub>&parallel;</sub></div>
+                <div style="margin-top:5px">
+                    W<sub>&plusmn;</sub> = &Omega;<sub>&plusmn;</sub>&sup2;T<sub>2</sub> /
+                    (1 + &Delta;<sub>&plusmn;</sub>&sup2;T<sub>2</sub>&sup2; + &Omega;<sub>&plusmn;</sub>&sup2;T<sub>1</sub>T<sub>2</sub>)
+                </div>
+                <div style="margin-top:5px; color:#8888aa; font-size:0.9em">
+                    Contrast = (&rho;<sub>0</sub><sup>off</sup> &minus; &rho;<sub>0</sub>) / &rho;<sub>0</sub><sup>off</sup>
                 </div>
             </div>
         </aside>
 
-        <!-- Right panel: charts -->
+        <!-- ── Right panel: charts ──────────────────────────────────────────── -->
         <main class="charts">
             <div class="chart-container">
-                <div id="bar-chart" class="plot"></div>
+                <div id="bar-chart" class="plot plot-tall"></div>
             </div>
             <div class="chart-container">
-                <div id="odmr-spectrum" class="plot"></div>
+                <div id="odmr-spectrum" class="plot plot-tall"></div>
             </div>
-            <div class="chart-container" id="time-evolution-container">
+            <div class="chart-container" id="time-evolution-container" style="display:none">
                 <div id="time-evolution" class="plot"></div>
             </div>
         </main>
