@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODMR Spin-1 Population Simulator</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>ODMR Spin-1 Population Dynamics</h1>
+        <p>H = D&middot;S<sub>z</sub>&sup2; + &gamma;<b>B</b>&middot;<b>S</b> &nbsp;|&nbsp; NV Center in Diamond</p>
+    </header>
+
+    <div class="app-container">
+        <!-- Left panel: controls -->
+        <aside class="controls">
+            <div class="control-group">
+                <h3>Microwave Drive</h3>
+
+                <div class="slider-row">
+                    <label>
+                        <span>Rabi Frequency &Omega;</span>
+                        <span class="value" id="value-omega"></span>
+                    </label>
+                    <input type="range" id="slider-omega">
+                </div>
+
+                <div class="slider-row">
+                    <label>
+                        <span>MW Frequency &omega;<sub>MW</sub></span>
+                        <span class="value" id="value-omegaMW"></span>
+                    </label>
+                    <input type="range" id="slider-omegaMW">
+                </div>
+
+                <div class="slider-row">
+                    <label>
+                        <span>Polarization &theta;</span>
+                        <span class="value" id="value-thetaDeg"></span>
+                    </label>
+                    <input type="range" id="slider-thetaDeg">
+                    <div class="pol-labels">
+                        <span>&sigma;+</span>
+                        <span>linear</span>
+                        <span>&sigma;&minus;</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>System Parameters</h3>
+
+                <div class="slider-row">
+                    <label>
+                        <span>Pumping Rate &Gamma;<sub>p</sub></span>
+                        <span class="value" id="value-gammaP"></span>
+                    </label>
+                    <input type="range" id="slider-gammaP">
+                </div>
+
+                <div class="slider-row">
+                    <label>
+                        <span>T<sub>1</sub> Relaxation</span>
+                        <span class="value" id="value-T1"></span>
+                    </label>
+                    <input type="range" id="slider-T1">
+                </div>
+
+                <div class="slider-row">
+                    <label>
+                        <span>T<sub>2</sub> Dephasing</span>
+                        <span class="value" id="value-T2"></span>
+                    </label>
+                    <input type="range" id="slider-T2">
+                </div>
+
+                <div class="slider-row">
+                    <label>
+                        <span>Magnetic Field B</span>
+                        <span class="value" id="value-B"></span>
+                    </label>
+                    <input type="range" id="slider-B">
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button id="btn-reset">Reset Defaults</button>
+                <button id="btn-time-evo">Show Time Evolution</button>
+            </div>
+
+            <div class="hamiltonian">
+                <div><span class="eq">H = D&middot;S<sub>z</sub>&sup2; + &gamma;B&middot;S<sub>z</sub></span></div>
+                <div>D = 2.87 GHz &nbsp;|&nbsp; &gamma; = 28.025 GHz/T</div>
+                <div>&omega;<sub>&plusmn;</sub> = D &plusmn; &gamma;B</div>
+                <div style="margin-top:6px">
+                    W<sub>&plusmn;</sub> = &Omega;<sub>&plusmn;</sub>&sup2;T<sub>2</sub> / (1 + &Delta;<sub>&plusmn;</sub>&sup2;T<sub>2</sub>&sup2; + &Omega;<sub>&plusmn;</sub>&sup2;T<sub>1</sub>T<sub>2</sub>)
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right panel: charts -->
+        <main class="charts">
+            <div class="chart-container">
+                <div id="bar-chart" class="plot"></div>
+            </div>
+            <div class="chart-container">
+                <div id="odmr-spectrum" class="plot"></div>
+            </div>
+            <div class="chart-container" id="time-evolution-container">
+                <div id="time-evolution" class="plot"></div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
