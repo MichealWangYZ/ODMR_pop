@@ -8,7 +8,7 @@ export const CONSTANTS = {
 };
 
 export const DEFAULTS = {
-    omega: 20,          // Rabi frequency (MHz) — raised for visible contrast
+    omega: 2,           // Rabi frequency (MHz) — start narrow; increase to see power broadening
     omegaMW: 2870,      // MW frequency (MHz)
     thetaDeg: 45,       // Polarization angle (degrees) — linear
     gammaP: 10,         // Optical pumping rate (MHz)
@@ -177,6 +177,34 @@ export function computeODMRSpectrumEnsemble(params, freqMin, freqMax, nPoints) {
     ]);
 
     return { frequencies, rhoZeroValues, contrastValues, resonanceFreqs, Bparallels };
+}
+
+/**
+ * Compute FWHM (MHz) and peak on-resonance contrast (%) for both transitions.
+ * FWHM = 2√(1 + Ω±² T₁T₂) / T₂  (power-broadened Lorentzian half-width)
+ */
+export function computeLinewidths(params) {
+    const { omega, thetaDeg, T1, T2, gammaP } = params;
+    const thetaRad = thetaDeg * Math.PI / 180;
+    const omegaPlus  = omega * Math.cos(thetaRad);
+    const omegaMinus = omega * Math.sin(thetaRad);
+
+    const fwhmPlus  = 2 * Math.sqrt(1 + omegaPlus  * omegaPlus  * T1 * T2) / T2;
+    const fwhmMinus = 2 * Math.sqrt(1 + omegaMinus * omegaMinus * T1 * T2) / T2;
+
+    // Peak W at Δ=0
+    const WmaxPlus  = (omegaPlus  * omegaPlus  * T2) / (1 + omegaPlus  * omegaPlus  * T1 * T2);
+    const WmaxMinus = (omegaMinus * omegaMinus * T2) / (1 + omegaMinus * omegaMinus * T1 * T2);
+
+    // Contrast at each resonance (single-NV approximation: ≈ W / (Γ_p + W))
+    const Bparam = params.ensembleMode ? params.Bmag : params.B;
+    const rhoOff = steadyStateForB({ ...params, omega: 0 }, Bparam).rhoZero;
+    const rhoPlusOn  = steadyStateForB({ ...params, omegaMW: CONSTANTS.D + CONSTANTS.gamma * Bparam }, Bparam).rhoZero;
+    const rhoMinusOn = steadyStateForB({ ...params, omegaMW: CONSTANTS.D - CONSTANTS.gamma * Bparam }, Bparam).rhoZero;
+    const contrastPlus  = (rhoOff - rhoPlusOn)  / rhoOff * 100;
+    const contrastMinus = (rhoOff - rhoMinusOn) / rhoOff * 100;
+
+    return { fwhmPlus, fwhmMinus, contrastPlus, contrastMinus };
 }
 
 /**

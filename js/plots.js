@@ -102,9 +102,10 @@ export function initODMRSpectrum(divId) {
         _spectrumLayout([]), CONFIG);
 }
 
-export function updateODMRSpectrum(divId, spectrumData, currentFreq) {
+export function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths) {
     const freqGHz = spectrumData.frequencies.map(f => f / 1000);
     const currentGHz = currentFreq / 1000;
+    const yMax = Math.max(...spectrumData.contrastValues, 0.01);
 
     const traces = [{
         x: freqGHz,
@@ -117,14 +118,58 @@ export function updateODMRSpectrum(divId, spectrumData, currentFreq) {
         fillcolor: 'rgba(255,217,61,0.08)',
     }];
 
-    // Vertical markers at resonance frequencies
-    const shapes = spectrumData.resonanceFreqs
-        .map(f => f / 1000)
-        .filter(f => f >= freqGHz[0] && f <= freqGHz[freqGHz.length - 1])
-        .map((f, i) => ({
-            type: 'line', x0: f, x1: f, y0: 0, y1: 1, yref: 'paper',
-            line: { color: i % 2 === 0 ? COLORS.plus : COLORS.minus, width: 1, dash: 'dot' },
-        }));
+    const shapes = [];
+    const annotations = [];
+
+    // Resonance markers + FWHM brackets
+    if (linewidths) {
+        const fwhms = [linewidths.fwhmPlus, linewidths.fwhmMinus];
+        spectrumData.resonanceFreqs
+            .slice(0, 2)   // single-NV: only 2 resonances; ensemble: all 8 handled below
+            .forEach((f, i) => {
+                const fGHz = f / 1000;
+                const hw = fwhms[i] / 2 / 1000;  // half-width in GHz
+                const col = i === 0 ? COLORS.plus : COLORS.minus;
+                const bracketY = yMax * 0.5;
+
+                // Dashed resonance line
+                shapes.push({
+                    type: 'line', x0: fGHz, x1: fGHz, y0: 0, y1: 1, yref: 'paper',
+                    line: { color: col, width: 1, dash: 'dot' },
+                });
+                // FWHM bracket (horizontal bar at half-max)
+                shapes.push({
+                    type: 'line', x0: fGHz - hw, x1: fGHz + hw, y0: bracketY, y1: bracketY,
+                    line: { color: col, width: 2 },
+                });
+                // Bracket end ticks
+                for (const x of [fGHz - hw, fGHz + hw]) {
+                    shapes.push({
+                        type: 'line', x0: x, x1: x, y0: bracketY - yMax * 0.04, y1: bracketY + yMax * 0.04,
+                        line: { color: col, width: 2 },
+                    });
+                }
+                // FWHM label
+                const fwhmMHz = fwhms[i];
+                annotations.push({
+                    x: fGHz, y: bracketY + yMax * 0.08, xref: 'x', yref: 'y', showarrow: false,
+                    text: fwhmMHz >= 1000 ? (fwhmMHz / 1000).toFixed(1) + ' GHz' : fwhmMHz.toFixed(0) + ' MHz',
+                    font: { color: col, size: 11, family: 'monospace' },
+                });
+            });
+
+        // Ensemble mode: just dot markers for all 8
+        if (spectrumData.resonanceFreqs.length > 2) {
+            spectrumData.resonanceFreqs.slice(2).forEach((f, i) => {
+                const fGHz = f / 1000;
+                if (fGHz < freqGHz[0] || fGHz > freqGHz[freqGHz.length - 1]) return;
+                shapes.push({
+                    type: 'line', x0: fGHz, x1: fGHz, y0: 0, y1: 1, yref: 'paper',
+                    line: { color: i % 2 === 0 ? COLORS.plus : COLORS.minus, width: 1, dash: 'dot' },
+                });
+            });
+        }
+    }
 
     // Current MW frequency cursor
     shapes.push({
@@ -132,16 +177,17 @@ export function updateODMRSpectrum(divId, spectrumData, currentFreq) {
         line: { color: '#ffffff', width: 1.5, dash: 'dash' },
     });
 
-    Plotly.react(divId, traces, _spectrumLayout(shapes), CONFIG);
+    Plotly.react(divId, traces, _spectrumLayout(shapes, annotations), CONFIG);
 }
 
-function _spectrumLayout(shapes) {
+function _spectrumLayout(shapes, annotations) {
     return {
         ...LAYOUT_BASE,
         title: { text: 'ODMR Spectrum — Contrast (%)', font: { size: 15 } },
         xaxis: { title: '\u03C9_MW (GHz)', gridcolor: COLORS.grid },
         yaxis: { title: 'ODMR Contrast (%)', gridcolor: COLORS.grid, rangemode: 'tozero' },
         shapes,
+        annotations: annotations || [],
     };
 }
 

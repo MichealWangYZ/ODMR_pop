@@ -199,6 +199,40 @@ header p {
     font-weight: bold;
 }
 
+/* Readout panel */
+#readout-panel {
+    padding: 8px 14px 10px;
+    border-top: 1px solid #333366;
+    font-size: 0.78em;
+    line-height: 1.7;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+#readout-text {
+    font-family: monospace;
+    color: #e0e0e0;
+}
+
+.ro-label {
+    color: #8888aa;
+}
+
+.ro-val {
+    color: #ffd93d;
+    font-weight: bold;
+}
+
+.readout-hint {
+    color: #666688;
+    font-size: 0.9em;
+    flex: 1 1 260px;
+    text-align: right;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .app-container {
