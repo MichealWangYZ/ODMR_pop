@@ -98,22 +98,24 @@ function _barLayout() {
 
 export function initODMRSpectrum(divId) {
     Plotly.newPlot(divId, [{ x: [], y: [], type: 'scatter', mode: 'lines',
-        line: { color: COLORS.accent, width: 2 }, name: 'Contrast (%)' }],
-        _spectrumLayout([]), CONFIG);
+        line: { color: COLORS.accent, width: 2 }, name: 'Dip Contrast (%)' }],
+        _spectrumLayout([], [], -0.01), CONFIG);
 }
 
 export function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths) {
     const freqGHz = spectrumData.frequencies.map(f => f / 1000);
     const currentGHz = currentFreq / 1000;
-    const yMax = Math.max(...spectrumData.contrastValues, 0.01);
+    const dipValues = spectrumData.contrastValues.map(v => -v);
+    const yMin = Math.min(...dipValues, -0.01);
+    const dipDepth = Math.abs(yMin);
 
     const traces = [{
         x: freqGHz,
-        y: spectrumData.contrastValues,
+        y: dipValues,
         type: 'scatter',
         mode: 'lines',
         line: { color: COLORS.accent, width: 2 },
-        name: 'Contrast (%)',
+        name: 'Dip Contrast (%)',
         fill: 'tozeroy',
         fillcolor: 'rgba(255,217,61,0.08)',
     }];
@@ -130,7 +132,8 @@ export function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths)
                 const fGHz = f / 1000;
                 const hw = fwhms[i] / 2 / 1000;  // half-width in GHz
                 const col = i === 0 ? COLORS.plus : COLORS.minus;
-                const bracketY = yMax * 0.5;
+                const bracketY = yMin * 0.5;
+                const tickHalfHeight = dipDepth * 0.04;
 
                 // Dashed resonance line
                 shapes.push({
@@ -145,14 +148,14 @@ export function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths)
                 // Bracket end ticks
                 for (const x of [fGHz - hw, fGHz + hw]) {
                     shapes.push({
-                        type: 'line', x0: x, x1: x, y0: bracketY - yMax * 0.04, y1: bracketY + yMax * 0.04,
+                        type: 'line', x0: x, x1: x, y0: bracketY - tickHalfHeight, y1: bracketY + tickHalfHeight,
                         line: { color: col, width: 2 },
                     });
                 }
                 // FWHM label
                 const fwhmMHz = fwhms[i];
                 annotations.push({
-                    x: fGHz, y: bracketY + yMax * 0.08, xref: 'x', yref: 'y', showarrow: false,
+                    x: fGHz, y: bracketY + dipDepth * 0.08, xref: 'x', yref: 'y', showarrow: false,
                     text: fwhmMHz >= 1000 ? (fwhmMHz / 1000).toFixed(1) + ' GHz' : fwhmMHz.toFixed(0) + ' MHz',
                     font: { color: col, size: 11, family: 'monospace' },
                 });
@@ -177,15 +180,15 @@ export function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths)
         line: { color: '#ffffff', width: 1.5, dash: 'dash' },
     });
 
-    Plotly.react(divId, traces, _spectrumLayout(shapes, annotations), CONFIG);
+    Plotly.react(divId, traces, _spectrumLayout(shapes, annotations, yMin), CONFIG);
 }
 
-function _spectrumLayout(shapes, annotations) {
+function _spectrumLayout(shapes, annotations, yMin) {
     return {
         ...LAYOUT_BASE,
-        title: { text: 'ODMR Spectrum — Contrast (%)', font: { size: 15 } },
+        title: { text: 'ODMR Spectrum — Contrast Dips (%)', font: { size: 15 } },
         xaxis: { title: '\u03C9_MW (GHz)', gridcolor: COLORS.grid },
-        yaxis: { title: 'ODMR Contrast (%)', gridcolor: COLORS.grid, rangemode: 'tozero' },
+        yaxis: { title: 'ODMR Dip Contrast (%)', gridcolor: COLORS.grid, range: [yMin * 1.15, 0], zeroline: true, zerolinecolor: COLORS.dim },
         shapes,
         annotations: annotations || [],
     };

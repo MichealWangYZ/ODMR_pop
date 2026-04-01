@@ -5,25 +5,29 @@ import { DEFAULTS } from './physics.js';
 // ─── Slider definitions ───────────────────────────────────────────────────────
 
 const SLIDERS_COMMON = [
-    { id: 'omega',    label: 'Rabi Frequency \u03A9',  min: 0,   max: 100, step: 0.5, default: DEFAULTS.omega,    unit: 'MHz' },
+    { id: 'omega',    label: 'Rabi Frequency \u03A9',  min: 0,   max: 10, step: 0.1, default: DEFAULTS.omega,    unit: 'MHz' },
     { id: 'omegaMW',  label: 'MW Frequency \u03C9_MW', min: 2600, max: 3200, step: 1, default: DEFAULTS.omegaMW,  unit: 'MHz', displayFn: v => (v / 1000).toFixed(3) + ' GHz' },
     { id: 'thetaDeg', label: 'Polarization \u03B8',    min: 0,   max: 90,  step: 1,   default: DEFAULTS.thetaDeg, unit: '\u00B0', polLabels: true },
-    { id: 'gammaP',   label: 'Pumping Rate \u0393\u209A', min: 0, max: 100, step: 0.5, default: DEFAULTS.gammaP,  unit: 'MHz' },
+    { id: 'gammaP',   label: 'Pumping Rate \u0393\u209A', min: 0, max: 20, step: 0.1, default: DEFAULTS.gammaP,  unit: 'MHz' },
     { id: 'T1', label: 'T\u2081 Relaxation', min: -1, max: 2,  step: 0.01, default: Math.log10(DEFAULTS.T1), log: true, unit: '\u03BCs' },
     { id: 'T2', label: 'T\u2082 Dephasing',  min: -3, max: 1,  step: 0.01, default: Math.log10(DEFAULTS.T2), log: true, unit: '\u03BCs' },
 ];
 
 const SLIDERS_SINGLE = [
-    { id: 'B', label: 'Field B', min: 0, max: 50, step: 0.1, default: DEFAULTS.B, unit: 'mT', group: 'single' },
+    { id: 'B', label: 'Field B', min: 0, max: 15, step: 0.1, default: DEFAULTS.B, unit: 'mT', group: 'single' },
 ];
 
 const SLIDERS_ENSEMBLE = [
-    { id: 'Bmag',   label: '|B| Magnitude', min: 0,   max: 50,  step: 0.1, default: DEFAULTS.Bmag,   unit: 'mT',    group: 'ensemble' },
+    { id: 'Bmag',   label: '|B| Magnitude', min: 0,   max: 15,  step: 0.1, default: DEFAULTS.Bmag,   unit: 'mT',    group: 'ensemble' },
     { id: 'Btheta', label: 'B polar \u03B8_B',  min: 0,   max: 90,  step: 1,   default: DEFAULTS.Btheta, unit: '\u00B0', group: 'ensemble' },
     { id: 'Bphi',   label: 'B azimuth \u03C6_B', min: 0,   max: 360, step: 1,   default: DEFAULTS.Bphi,   unit: '\u00B0', group: 'ensemble' },
 ];
 
 const ALL_SLIDERS = [...SLIDERS_COMMON, ...SLIDERS_SINGLE, ...SLIDERS_ENSEMBLE];
+
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -34,6 +38,7 @@ export function readParams() {
         if (!el) continue;
         let val = parseFloat(el.value);
         if (cfg.log) val = Math.pow(10, val);
+        else val = clamp(val, cfg.min, cfg.max);
         params[cfg.id] = val;
     }
     params.ensembleMode = document.getElementById('btn-ensemble').dataset.active === 'true';
