@@ -5,7 +5,7 @@ import { DEFAULTS } from './physics.js';
 // ─── Slider definitions ───────────────────────────────────────────────────────
 
 const SLIDERS_COMMON = [
-    { id: 'omega',    label: 'Rabi Frequency \u03A9',  min: 0,   max: 10, step: 0.1, default: DEFAULTS.omega,    unit: 'MHz' },
+    { id: 'omega',    label: 'Rabi Frequency \u03A9',  min: 0,   max: 5, step: 0.1, default: DEFAULTS.omega,    unit: 'MHz' },
     { id: 'omegaMW',  label: 'MW Frequency \u03C9_MW', min: 2600, max: 3200, step: 1, default: DEFAULTS.omegaMW,  unit: 'MHz', displayFn: v => (v / 1000).toFixed(3) + ' GHz' },
     { id: 'thetaDeg', label: 'Polarization \u03B8',    min: 0,   max: 90,  step: 1,   default: DEFAULTS.thetaDeg, unit: '\u00B0', polLabels: true },
     { id: 'gammaP',   label: 'Pumping Rate \u0393\u209A', min: 0, max: 20, step: 0.1, default: DEFAULTS.gammaP,  unit: 'MHz' },
