@@ -7,6 +7,16 @@ export const CONSTANTS = {
     gamma: 28.025,   // Gyromagnetic ratio in MHz/mT (= 28.025 GHz/T)
 };
 
+const OPTICAL_RATES = {
+    // Minimal NV optical cycle: excited-state ISC is much stronger for m_s = ±1,
+    // and singlet decay preferentially returns population to m_s = 0.
+    kRad: 65,
+    kISC0: 5,
+    kISCpm: 35,
+    kSinglet0: 6,
+    kSingletPm: 0.5,
+};
+
 export const DEFAULTS = {
     omega: 2,           // Rabi frequency (MHz) — start narrow; increase to see power broadening
     omegaMW: 2870,      // MW frequency (MHz)
@@ -30,6 +40,16 @@ const NV_ORIENTATIONS = [
     [-1,  1, -1].map(v => v / Math.sqrt(3)),
     [-1, -1,  1].map(v => v / Math.sqrt(3)),
 ];
+
+const IDX = Object.freeze({
+    gPlus: 0,
+    gZero: 1,
+    gMinus: 2,
+    ePlus: 3,
+    eZero: 4,
+    eMinus: 5,
+    singlet: 6,
+});
 
 /** Convert spherical angles to Cartesian B vector */
 export function bVectorFromAngles(Bmag, Btheta, Bphi) {
@@ -75,24 +95,100 @@ function transitionRatesForB(params, Bparallel) {
  * Core: analytical steady-state populations for a given B_parallel.
  * Solves 2×2 system via Cramer's rule.
  */
-function steadyStateForB(params, Bparallel) {
+function addTransition(matrix, from, to, rate) {
+    matrix[to][from] += rate;
+    matrix[from][from] -= rate;
+}
+
+function buildRateMatrix(params, Bparallel) {
+    const n = 7;
+    const matrix = Array.from({ length: n }, () => Array(n).fill(0));
     const { gammaP, T1 } = params;
     const gamma1 = 1 / T1;
     const { Wp, Wm } = transitionRatesForB(params, Bparallel);
 
-    const aPlus  = gammaP + gamma1 / 3 + Wp;
-    const aMinus = gammaP + gamma1 / 3 + Wm;
-    const bPlus  = gamma1 / 3 + Wp;
-    const bMinus = gamma1 / 3 + Wm;
+    // Microwave-driven spin flips in the ground state manifold.
+    addTransition(matrix, IDX.gZero,  IDX.gPlus,  Wp);
+    addTransition(matrix, IDX.gPlus,  IDX.gZero,  Wp);
+    addTransition(matrix, IDX.gZero,  IDX.gMinus, Wm);
+    addTransition(matrix, IDX.gMinus, IDX.gZero,  Wm);
 
-    const det = aPlus * aMinus - bPlus * bMinus;
-    if (Math.abs(det) < 1e-15) {
-        return { rhoPlus: 1 / 3, rhoZero: 1 / 3, rhoMinus: 1 / 3 };
+    // High-temperature spin-lattice relaxation in the ground state manifold.
+    addTransition(matrix, IDX.gZero,  IDX.gPlus,  gamma1 / 3);
+    addTransition(matrix, IDX.gPlus,  IDX.gZero,  gamma1 / 3);
+    addTransition(matrix, IDX.gZero,  IDX.gMinus, gamma1 / 3);
+    addTransition(matrix, IDX.gMinus, IDX.gZero,  gamma1 / 3);
+
+    // Optical excitation.
+    addTransition(matrix, IDX.gPlus,  IDX.ePlus,  gammaP);
+    addTransition(matrix, IDX.gZero,  IDX.eZero,  gammaP);
+    addTransition(matrix, IDX.gMinus, IDX.eMinus, gammaP);
+
+    // Spin-conserving radiative decay.
+    addTransition(matrix, IDX.ePlus,  IDX.gPlus,  OPTICAL_RATES.kRad);
+    addTransition(matrix, IDX.eZero,  IDX.gZero,  OPTICAL_RATES.kRad);
+    addTransition(matrix, IDX.eMinus, IDX.gMinus, OPTICAL_RATES.kRad);
+
+    // Spin-selective intersystem crossing from the excited state.
+    addTransition(matrix, IDX.ePlus,  IDX.singlet, OPTICAL_RATES.kISCpm);
+    addTransition(matrix, IDX.eMinus, IDX.singlet, OPTICAL_RATES.kISCpm);
+    addTransition(matrix, IDX.eZero,  IDX.singlet, OPTICAL_RATES.kISC0);
+
+    // Preferential return from singlet to m_s = 0.
+    addTransition(matrix, IDX.singlet, IDX.gZero,  OPTICAL_RATES.kSinglet0);
+    addTransition(matrix, IDX.singlet, IDX.gPlus,  OPTICAL_RATES.kSingletPm);
+    addTransition(matrix, IDX.singlet, IDX.gMinus, OPTICAL_RATES.kSingletPm);
+
+    return matrix;
+}
+
+function solveLinearSystem(matrix, rhs) {
+    const n = rhs.length;
+    const a = matrix.map((row, i) => row.slice().concat(rhs[i]));
+
+    for (let col = 0; col < n; col++) {
+        let pivot = col;
+        for (let row = col + 1; row < n; row++) {
+            if (Math.abs(a[row][col]) > Math.abs(a[pivot][col])) pivot = row;
+        }
+        if (Math.abs(a[pivot][col]) < 1e-12) return null;
+        if (pivot !== col) [a[col], a[pivot]] = [a[pivot], a[col]];
+
+        const pivotVal = a[col][col];
+        for (let j = col; j <= n; j++) a[col][j] /= pivotVal;
+
+        for (let row = 0; row < n; row++) {
+            if (row === col) continue;
+            const factor = a[row][col];
+            if (factor === 0) continue;
+            for (let j = col; j <= n; j++) a[row][j] -= factor * a[col][j];
+        }
     }
 
-    const rhoPlus  = (bPlus  * gammaP) / det;
-    const rhoMinus = (bMinus * gammaP) / det;
-    return { rhoPlus, rhoZero: 1 - rhoPlus - rhoMinus, rhoMinus };
+    return a.map(row => row[n]);
+}
+
+function populationsFromState(state) {
+    return {
+        rhoPlus: state[IDX.gPlus],
+        rhoZero: state[IDX.gZero],
+        rhoMinus: state[IDX.gMinus],
+    };
+}
+
+function steadyStateForB(params, Bparallel) {
+    const matrix = buildRateMatrix(params, Bparallel);
+    const normalized = matrix.map(row => row.slice());
+    const rhs = Array(7).fill(0);
+
+    normalized[6] = Array(7).fill(1);
+    rhs[6] = 1;
+
+    const state = solveLinearSystem(normalized, rhs);
+    if (!state) {
+        return { rhoPlus: 1 / 3, rhoZero: 1 / 3, rhoMinus: 1 / 3 };
+    }
+    return populationsFromState(state);
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -110,16 +206,10 @@ export function computeSteadyState(params) {
 
 /** Rate equations RHS for ODE integrator (single-NV). */
 export function rateEquationsRHS(state, params) {
-    const [rhoPlus, rhoMinus] = state;
-    const rhoZero = 1 - rhoPlus - rhoMinus;
-    const { gammaP, T1 } = params;
-    const gamma1 = 1 / T1;
-    const { Wp, Wm } = transitionRatesForB(params, params.B);
-
-    return [
-        -gammaP * rhoPlus  + gamma1 * (rhoZero - rhoPlus)  / 3 + Wp * (rhoZero - rhoPlus),
-        -gammaP * rhoMinus + gamma1 * (rhoZero - rhoMinus) / 3 + Wm * (rhoZero - rhoMinus),
-    ];
+    const matrix = buildRateMatrix(params, params.B);
+    return matrix.map(row =>
+        row.reduce((sum, coeff, i) => sum + coeff * state[i], 0)
+    );
 }
 
 /**

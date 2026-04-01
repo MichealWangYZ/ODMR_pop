@@ -205,10 +205,14 @@ export function updateTimeEvolution(divId, times, states) {
 }
 
 function _timeTraces(times, states) {
+    const rhoPlus = states.map(s => s.length >= 7 ? s[0] : s[0]);
+    const rhoZero = states.map(s => s.length >= 7 ? s[1] : 1 - s[0] - s[1]);
+    const rhoMinus = states.map(s => s.length >= 7 ? s[2] : s[1]);
+
     return [
-        { x: times, y: states.map(s => s[0]),            type: 'scatter', mode: 'lines', name: '\u03C1\u208A\u2081', line: { color: COLORS.plus,  width: 2 } },
-        { x: times, y: states.map(s => 1 - s[0] - s[1]), type: 'scatter', mode: 'lines', name: '\u03C1\u2080',       line: { color: COLORS.zero,  width: 2 } },
-        { x: times, y: states.map(s => s[1]),             type: 'scatter', mode: 'lines', name: '\u03C1\u208B\u2081', line: { color: COLORS.minus, width: 2 } },
+        { x: times, y: rhoPlus,  type: 'scatter', mode: 'lines', name: '\u03C1\u208A\u2081', line: { color: COLORS.plus,  width: 2 } },
+        { x: times, y: rhoZero,  type: 'scatter', mode: 'lines', name: '\u03C1\u2080',       line: { color: COLORS.zero,  width: 2 } },
+        { x: times, y: rhoMinus, type: 'scatter', mode: 'lines', name: '\u03C1\u208B\u2081', line: { color: COLORS.minus, width: 2 } },
     ];
 }
 

@@ -78,7 +78,9 @@ function fullUpdate() {
     // Time evolution
     if (showTimeEvolution && !ensemble) {
         const tMax = Math.max(5 * params.T1, 0.5 / (params.gammaP || 0.01));
-        const { times, states } = integrate(rateEquationsRHS, [1/3, 1/3], tMax, tMax / 600, params);
+        const initialState = [1/3, 1/3, 1/3, 0, 0, 0, 0];
+        const dt = Math.min(tMax / 1200, 0.002);
+        const { times, states } = integrate(rateEquationsRHS, initialState, tMax, dt, params);
         updateTimeEvolution('time-evolution', times, states);
     }
 }
