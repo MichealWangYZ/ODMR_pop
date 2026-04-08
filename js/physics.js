@@ -8,7 +8,17 @@
 const CONSTANTS = {
     D: 2870,         // Zero-field splitting in MHz (2.87 GHz)
     gamma: 28.025,   // Gyromagnetic ratio in MHz/mT (= 28.025 GHz/T)
+    A_N14: 2.16,     // ¹⁴N hyperfine coupling A∥ (MHz). I=1 → triplet at {-A, 0, +A}.
 };
+
+// ¹⁴N nuclear spin I=1 splits each electronic transition into three equally
+// weighted lines. Each NV is treated as 3 independent nuclear sub-ensembles.
+const HYPERFINE_OFFSETS_N14 = [-CONSTANTS.A_N14, 0, CONSTANTS.A_N14];
+
+// TODO: model T2 enhancement in isotopically purified (¹²C-enriched) diamond.
+// Natural-abundance ¹³C bath limits T2 to a few µs; in [¹²C]-purified samples
+// T2 can reach hundreds of µs to ms, and the ¹³C-induced inhomogeneous
+// broadening should be replaced with a much narrower nuclear-spin-bath model.
 
 const OPTICAL_RATES = {
     // Minimal NV optical cycle: excited-state ISC is much stronger for m_s = ±1,
@@ -183,7 +193,8 @@ function mwRabiFrequencies(params, nvAxis) {
 
 /**
  * Core: compute MW transition rates for an explicit B_parallel value.
- * W± = Ω±² T2 / (1 + Δ±² T2² + Ω±² T1 T2)
+ * W± = Ω±² T2 / (1 + Δ±² T2² + Ω±² T1 T2), averaged over the ¹⁴N hyperfine
+ * triplet with equal nuclear weights (1/3 each).
  */
 function transitionRatesForB(params, Bparallel, nvAxis) {
     const { omegaMW, T1, T2 } = params;
@@ -192,13 +203,20 @@ function transitionRatesForB(params, Bparallel, nvAxis) {
     const freqPlus  = CONSTANTS.D + CONSTANTS.gamma * Bparallel;
     const freqMinus = CONSTANTS.D - CONSTANTS.gamma * Bparallel;
 
-    const deltaPlus  = omegaMW - freqPlus;
-    const deltaMinus = omegaMW - freqMinus;
+    const satPlus  = omegaPlus  * omegaPlus  * T1 * T2;
+    const satMinus = omegaMinus * omegaMinus * T1 * T2;
+    const numPlus  = omegaPlus  * omegaPlus  * T2;
+    const numMinus = omegaMinus * omegaMinus * T2;
 
-    const Wp = (omegaPlus  * omegaPlus  * T2) /
-               (1 + deltaPlus  * deltaPlus  * T2 * T2 + omegaPlus  * omegaPlus  * T1 * T2);
-    const Wm = (omegaMinus * omegaMinus * T2) /
-               (1 + deltaMinus * deltaMinus * T2 * T2 + omegaMinus * omegaMinus * T1 * T2);
+    let Wp = 0, Wm = 0;
+    for (const offset of HYPERFINE_OFFSETS_N14) {
+        const dP = omegaMW - (freqPlus  + offset);
+        const dM = omegaMW - (freqMinus + offset);
+        Wp += numPlus  / (1 + dP * dP * T2 * T2 + satPlus);
+        Wm += numMinus / (1 + dM * dM * T2 * T2 + satMinus);
+    }
+    Wp /= HYPERFINE_OFFSETS_N14.length;
+    Wm /= HYPERFINE_OFFSETS_N14.length;
 
     return { Wp, Wm, freqPlus, freqMinus };
 }
@@ -308,6 +326,40 @@ function steadyStateForB(params, Bparallel, nvAxis) {
     return populationsFromState(state);
 }
 
+function frequencyGrid(freqMin, freqMax, nPoints, extraFreqs = [], localHalfWidth = 0, localPoints = 0) {
+    const values = [];
+    const step = (freqMax - freqMin) / (nPoints - 1);
+    for (let i = 0; i < nPoints; i++) {
+        values.push(freqMin + i * step);
+    }
+    for (const freq of extraFreqs) {
+        if (freq >= freqMin && freq <= freqMax) values.push(freq);
+        if (localHalfWidth <= 0 || localPoints <= 1) continue;
+        for (let i = 0; i < localPoints; i++) {
+            const offset = -localHalfWidth + 2 * localHalfWidth * i / (localPoints - 1);
+            const localFreq = freq + offset;
+            if (localFreq >= freqMin && localFreq <= freqMax) values.push(localFreq);
+        }
+    }
+    return Array.from(new Set(values.map(freq => freq.toFixed(6))))
+        .map(Number)
+        .sort((a, b) => a - b);
+}
+
+function resonanceSamplingWindow(params) {
+    const t2 = Math.max(params.T2 || 0, 1e-6);
+    return Math.min(8, Math.max(1, 8 / t2));
+}
+
+/** Expand a list of electronic resonance frequencies to include the ¹⁴N triplet. */
+function expandHyperfine(freqs) {
+    const out = [];
+    for (const f of freqs) {
+        for (const offset of HYPERFINE_OFFSETS_N14) out.push(f + offset);
+    }
+    return out;
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /** Transition rates for single-NV mode. */
@@ -336,18 +388,17 @@ function rateEquationsRHS(state, params) {
  */
 function computeODMRSpectrum(params, freqMin, freqMax, nPoints) {
     const rhoZero_off = steadyStateForB({ ...params, omega: 0 }, params.B, SINGLE_NV_ORIENTATION).rhoZero;
-    const step = (freqMax - freqMin) / (nPoints - 1);
+    const { freqPlus, freqMinus } = transitionRatesForB(params, params.B, SINGLE_NV_ORIENTATION);
 
+    const sampleFreqs = expandHyperfine([freqPlus, freqMinus]);
     const frequencies = [], rhoZeroValues = [], contrastValues = [];
-    for (let i = 0; i < nPoints; i++) {
-        const freq = freqMin + i * step;
+    for (const freq of frequencyGrid(freqMin, freqMax, nPoints, sampleFreqs, resonanceSamplingWindow(params), 81)) {
         const { rhoZero } = steadyStateForB({ ...params, omegaMW: freq }, params.B, SINGLE_NV_ORIENTATION);
         frequencies.push(freq);
         rhoZeroValues.push(rhoZero);
         contrastValues.push((rhoZero_off - rhoZero) / rhoZero_off * 100);
     }
 
-    const { freqPlus, freqMinus } = transitionRatesForB(params, params.B, SINGLE_NV_ORIENTATION);
     return { frequencies, rhoZeroValues, contrastValues, resonanceFreqs: [freqPlus, freqMinus] };
 }
 
@@ -358,6 +409,10 @@ function computeODMRSpectrum(params, freqMin, freqMax, nPoints) {
 function computeODMRSpectrumEnsemble(params, freqMin, freqMax, nPoints) {
     const BVec = bVectorFromAngles(params.Bmag, params.Btheta, params.Bphi);
     const Bparallels = NV_ORIENTATIONS.map(u => projectB(BVec, u));
+    const resonanceFreqs = Bparallels.flatMap(Bp => [
+        CONSTANTS.D + CONSTANTS.gamma * Bp,
+        CONSTANTS.D - CONSTANTS.gamma * Bp,
+    ]);
 
     // Off-resonance background (average across orientations, no MW drive)
     const offParams = { ...params, omega: 0 };
@@ -366,11 +421,10 @@ function computeODMRSpectrumEnsemble(params, freqMin, freqMax, nPoints) {
         weight: opticalWeight(params, NV_ORIENTATIONS[i]),
     }))).rhoZero;
 
-    const step = (freqMax - freqMin) / (nPoints - 1);
+    const sampleFreqs = expandHyperfine(resonanceFreqs);
     const frequencies = [], rhoZeroValues = [], contrastValues = [];
 
-    for (let i = 0; i < nPoints; i++) {
-        const freq = freqMin + i * step;
+    for (const freq of frequencyGrid(freqMin, freqMax, nPoints, sampleFreqs, resonanceSamplingWindow(params), 81)) {
         const sweepParams = { ...params, omegaMW: freq };
         const avgRhoZero = weightedPopulationAverage(Bparallels.map((Bp, j) => ({
             pop: steadyStateForB(sweepParams, Bp, NV_ORIENTATIONS[j]),
@@ -380,12 +434,6 @@ function computeODMRSpectrumEnsemble(params, freqMin, freqMax, nPoints) {
         rhoZeroValues.push(avgRhoZero);
         contrastValues.push((rhoZero_off - avgRhoZero) / rhoZero_off * 100);
     }
-
-    // All 8 resonance frequencies (may include negative → shown only if in sweep range)
-    const resonanceFreqs = Bparallels.flatMap(Bp => [
-        CONSTANTS.D + CONSTANTS.gamma * Bp,
-        CONSTANTS.D - CONSTANTS.gamma * Bp,
-    ]);
 
     return { frequencies, rhoZeroValues, contrastValues, resonanceFreqs, Bparallels };
 }

@@ -23,6 +23,7 @@ const { initSliders, readParams, resetSliders, toggleEnsembleMode } = window.ODM
 
 let showTimeEvolution = false;
 let spectrumTimer = null;
+const SPECTRUM_POINTS = 2400;
 
 function updateReadout(lw) {
     const el = document.getElementById('readout-text');
@@ -55,8 +56,8 @@ function fullUpdate() {
     clearTimeout(spectrumTimer);
     spectrumTimer = setTimeout(() => {
         const spectrumData = ensemble
-            ? computeODMRSpectrumEnsemble(params, 2600, 3200, 400)
-            : computeODMRSpectrum(params, 2600, 3200, 400);
+            ? computeODMRSpectrumEnsemble(params, 2600, 3200, SPECTRUM_POINTS)
+            : computeODMRSpectrum(params, 2600, 3200, SPECTRUM_POINTS);
         updateODMRSpectrum('odmr-spectrum', spectrumData, params.omegaMW, ensemble ? null : lw);
     }, 30);
 

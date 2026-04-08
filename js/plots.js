@@ -21,6 +21,15 @@ const LAYOUT_BASE = {
 };
 
 const CONFIG = { responsive: true, displayModeBar: false };
+// Spectrum chart needs zoom/pan to expose narrow features (hyperfine triplet,
+// power-narrowed dips). Drag to box-zoom; scroll to scale; double-click to reset.
+const SPECTRUM_CONFIG = {
+    responsive: true,
+    displayModeBar: true,
+    displaylogo: false,
+    scrollZoom: true,
+    modeBarButtonsToRemove: ['lasso2d', 'select2d', 'toggleSpikelines'],
+};
 
 // ─── Bar chart ───────────────────────────────────────────────────────────────
 
@@ -100,7 +109,7 @@ function _barLayout() {
 function initODMRSpectrum(divId) {
     Plotly.newPlot(divId, [{ x: [], y: [], type: 'scatter', mode: 'lines',
         line: { color: COLORS.accent, width: 2 }, name: 'Dip Contrast (%)' }],
-        _spectrumLayout([], [], -0.01), CONFIG);
+        _spectrumLayout([], [], -0.01), SPECTRUM_CONFIG);
 }
 
 function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths) {
@@ -181,17 +190,19 @@ function updateODMRSpectrum(divId, spectrumData, currentFreq, linewidths) {
         line: { color: '#ffffff', width: 1.5, dash: 'dash' },
     });
 
-    Plotly.react(divId, traces, _spectrumLayout(shapes, annotations, yMin), CONFIG);
+    Plotly.react(divId, traces, _spectrumLayout(shapes, annotations, yMin), SPECTRUM_CONFIG);
 }
 
 function _spectrumLayout(shapes, annotations, yMin) {
     return {
         ...LAYOUT_BASE,
-        title: { text: 'ODMR Spectrum — Contrast Dips (%)', font: { size: 15 } },
+        title: { text: 'ODMR Spectrum — Contrast Dips (%)   (drag to zoom · scroll to scale · double-click to reset)', font: { size: 13 } },
         xaxis: { title: '\u03C9_MW (GHz)', gridcolor: COLORS.grid },
         yaxis: { title: 'ODMR Dip Contrast (%)', gridcolor: COLORS.grid, range: [yMin * 1.15, 0], zeroline: true, zerolinecolor: COLORS.dim },
         shapes,
         annotations: annotations || [],
+        // Preserve user-driven zoom/pan across slider-triggered re-renders.
+        uirevision: 'spectrum',
     };
 }
 

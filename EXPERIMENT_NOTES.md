@@ -62,3 +62,77 @@ Examples:
 - `-10 dBm -> ~0.47 MHz`
 - `0 dBm -> ~1.5 MHz`
 - `10 dBm -> ~4.7 MHz`
+
+## ¹⁴N Hyperfine Triplet
+
+Each electronic transition `|0> <-> |±1>` is split into three lines by the
+hyperfine coupling to the host ¹⁴N nucleus (I = 1):
+
+- Ground-state axial coupling `A∥ ≈ -2.16 MHz` (sign immaterial for the
+  symmetric triplet structure used here).
+- Three nuclear sub-states `m_I = -1, 0, +1` give equally weighted lines at
+  `ω_e + m_I · A∥`, i.e. offsets `{-2.16, 0, +2.16}` MHz from the electronic
+  resonance.
+
+Implementation (`js/physics.js`):
+
+- `CONSTANTS.A_N14 = 2.16` MHz, `HYPERFINE_OFFSETS_N14 = [-A, 0, +A]`.
+- `transitionRatesForB` averages the Lorentzian rate `W±` over the three
+  hyperfine offsets with equal nuclear weights `1/3`. This is a mean-field
+  treatment of the spectator nucleus — exact in the unsaturated limit
+  (`Ω² T1 T2 ≪ 1`) and a small overestimate of saturation in the saturated
+  regime, but adequate for the visualization.
+- `expandHyperfine()` is used by `computeODMRSpectrum` and
+  `computeODMRSpectrumEnsemble` to seed the dense local sampling cluster
+  around every hyperfine sub-line, not just the electronic centers. This
+  prevents undersampling once `T2` is long enough that the linewidth
+  approaches or falls below `A∥`.
+
+Visibility regimes:
+
+- `T2 ≲ 1 µs`: power-broadened FWHM (≈ a few MHz) ≫ `A∥`. The triplet stays
+  merged into a single dip whose effective width includes the hyperfine
+  spread (~`A∥`).
+- `T2 ≈ 3 µs`: FWHM crosses below `A∥`. The triplet just resolves; valleys
+  between sub-peaks become visible.
+- `T2 ≳ 5 µs`: three clean sub-dips of approximately equal depth at
+  `{-A∥, 0, +A∥}`, with valleys an order of magnitude shallower.
+
+References:
+
+- ¹⁴N ground-state hyperfine: Felton et al., *Phys. Rev. B* **79**, 075203 (2009).
+  https://doi.org/10.1103/PhysRevB.79.075203
+- Smeltzer, McIntyre & Childress, *Phys. Rev. A* **80**, 050302(R) (2009),
+  resolving the ¹⁴N triplet in cw-ODMR. https://doi.org/10.1103/PhysRevA.80.050302
+
+### Plot interaction
+
+Because the triplet spans only ~4 MHz against a default 600 MHz x-window,
+the structure is sub-pixel at the default zoom. The spectrum chart now has
+Plotly's drag-to-zoom, scroll-zoom and reset enabled
+(`SPECTRUM_CONFIG` in `js/plots.js`), and `uirevision: 'spectrum'` so the
+user-driven zoom survives slider updates. Drag a ~10 MHz box around a dashed
+resonance marker to see the triplet.
+
+## TODO — Isotopically Purified Diamond (¹²C-Enriched)
+
+Natural-abundance diamond contains ~1.1 % ¹³C (I = 1/2), whose dipolar
+coupling to the NV electronic spin is the dominant decoherence source for
+the bulk ensemble — capping `T2` at a few µs at room temperature. In
+isotopically purified ([¹²C] > 99.99 %) samples, `T2` lengthens by 1–3
+orders of magnitude (hundreds of µs to ms; Balasubramanian et al.,
+*Nature Materials* **8**, 383 (2009),
+https://doi.org/10.1038/nmat2420), and the inhomogeneous-broadening
+contribution from the ¹³C bath should be replaced with a much narrower
+nuclear-spin-bath model.
+
+Future work for the simulator:
+
+- Expose a `¹³C abundance` slider, mapping abundance to a `T2*` /
+  `T2`-Hahn pair via a published parameterization (e.g. Maze et al.,
+  *Nature* **455**, 644 (2008); Mizuochi et al., *Phys. Rev. B* **80**,
+  041201(R) (2009)).
+- At very low ¹³C, expose the residual hyperfine satellites (single ¹³C
+  sites) rather than treating them as broadening.
+- Distinguish the ensemble inhomogeneous `T2*` from the single-NV
+  intrinsic `T2` rather than collapsing both into one parameter.
