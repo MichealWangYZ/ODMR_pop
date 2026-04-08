@@ -45,10 +45,23 @@
                 </div>
 
                 <div class="slider-row">
-                    <label><span>Polarization &theta;</span><span class="value" id="value-thetaDeg"></span></label>
+                    <label><span>MW Ellipticity &chi;</span><span class="value" id="value-thetaDeg"></span></label>
                     <input type="range" id="slider-thetaDeg">
                     <div class="pol-labels"><span>&sigma;+</span><span>linear</span><span>&sigma;&minus;</span></div>
                 </div>
+            </div>
+
+            <!-- Optical drive -->
+            <div class="control-group">
+                <h3>Optical Drive</h3>
+
+                <div class="slider-row">
+                    <label><span>Laser Polarization &phi;<sub>L</sub></span><span class="value" id="value-laserPolDeg"></span></label>
+                    <input type="range" id="slider-laserPolDeg">
+                </div>
+                <p class="mode-hint">
+                    Optical pumping and detected weighting follow |E<sub>L</sub> &times; n<sub>NV</sub>|<sup>2</sup> for each NV orientation.
+                </p>
             </div>
 
             <!-- System params -->
@@ -110,7 +123,7 @@
 
             <!-- Physics reference -->
             <div class="hamiltonian">
-                <div><span class="eq">H = D&middot;S<sub>z</sub>&sup2; + &gamma;B<sub>&parallel;</sub>&middot;S<sub>z</sub></span></div>
+                <div><span class="eq">H/h = D&middot;S<sub>z</sub>&sup2; + &gamma;<b>B</b><sub>0</sub>&middot;<b>S</b> + &gamma;<b>B</b><sub>1</sub>(t)&middot;<b>S</b></span></div>
                 <div>D = 2.87 GHz &nbsp;|&nbsp; &gamma; = 28.025 GHz/T</div>
                 <div>&omega;<sub>&plusmn;</sub> = D &plusmn; &gamma;B<sub>&parallel;</sub></div>
                 <div style="margin-top:5px">
@@ -118,7 +131,7 @@
                     (1 + &Delta;<sub>&plusmn;</sub>&sup2;T<sub>2</sub>&sup2; + &Omega;<sub>&plusmn;</sub>&sup2;T<sub>1</sub>T<sub>2</sub>)
                 </div>
                 <div style="margin-top:5px; color:#8888aa; font-size:0.9em">
-                    Optical cycle includes spin-selective ISC: m<sub>s</sub>=&plusmn;1 shelves more strongly and relaxes back preferentially to m<sub>s</sub>=0.
+                    &Omega;<sub>&plusmn;</sub> comes from circular MW components transverse to n<sub>NV</sub>; optical excitation scales with the laser field projected onto the NV optical dipoles.
                 </div>
             </div>
         </aside>
@@ -135,7 +148,7 @@
                     <span class="readout-hint">
                         &uarr; Brackets show power-broadened FWHM &mdash;
                         high &Omega; broadens without raising contrast (W saturates at 1/T<sub>1</sub>).
-                        Here &Gamma;<sub>p</sub> is optical excitation, while polarization arises from spin-selective ISC and singlet return to m<sub>s</sub>=0.
+                        Here &Gamma;<sub>p</sub> is optical excitation; spin polarization arises from spin-selective ISC and singlet return to m<sub>s</sub>=0.
                     </span>
                 </div>
             </div>

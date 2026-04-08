@@ -3,6 +3,7 @@
 
 const {
     computeSteadyState,
+    computeEnsembleSteadyState,
     computeODMRSpectrum,
     computeODMRSpectrumEnsemble,
     computeBaseline,
@@ -23,29 +24,6 @@ const { initSliders, readParams, resetSliders, toggleEnsembleMode } = window.ODM
 let showTimeEvolution = false;
 let spectrumTimer = null;
 
-// Inline NV orientation projection (mirrors physics.js internals)
-const s3 = 1 / Math.sqrt(3);
-const NV_ORIENTATIONS = [[ s3, s3, s3],[ s3,-s3,-s3],[-s3, s3,-s3],[-s3,-s3, s3]];
-const dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-
-function ensembleAvgPops(params) {
-    const t = params.Btheta * Math.PI / 180;
-    const p = params.Bphi   * Math.PI / 180;
-    const BVec = [
-        params.Bmag * Math.sin(t) * Math.cos(p),
-        params.Bmag * Math.sin(t) * Math.sin(p),
-        params.Bmag * Math.cos(t),
-    ];
-    let rhoPlus = 0, rhoZero = 0, rhoMinus = 0;
-    for (const u of NV_ORIENTATIONS) {
-        const pop = computeSteadyState({ ...params, B: dot(BVec, u) });
-        rhoPlus  += pop.rhoPlus;
-        rhoZero  += pop.rhoZero;
-        rhoMinus += pop.rhoMinus;
-    }
-    return { rhoPlus: rhoPlus / 4, rhoZero: rhoZero / 4, rhoMinus: rhoMinus / 4 };
-}
-
 function updateReadout(lw) {
     const el = document.getElementById('readout-text');
     if (!el) return;
@@ -65,7 +43,7 @@ function fullUpdate() {
     const ensemble = params.ensembleMode;
 
     // Bar chart
-    const pops = ensemble ? ensembleAvgPops(params) : computeSteadyState(params);
+    const pops = ensemble ? computeEnsembleSteadyState(params) : computeSteadyState(params);
     const baseline = computeBaseline(params);
     updateBarChart('bar-chart', pops, baseline);
 

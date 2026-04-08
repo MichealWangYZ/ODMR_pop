@@ -8,7 +8,8 @@ const { DEFAULTS: PHYSICS_DEFAULTS } = window.ODMRPhysics;
 const SLIDERS_COMMON = [
     { id: 'omega',    label: 'Rabi Frequency \u03A9',  min: 0,   max: 5, step: 0.1, default: PHYSICS_DEFAULTS.omega,    unit: 'MHz' },
     { id: 'omegaMW',  label: 'MW Frequency \u03C9_MW', min: 2600, max: 3200, step: 1, default: PHYSICS_DEFAULTS.omegaMW,  unit: 'MHz', displayFn: v => (v / 1000).toFixed(3) + ' GHz' },
-    { id: 'thetaDeg', label: 'Polarization \u03B8',    min: 0,   max: 90,  step: 1,   default: PHYSICS_DEFAULTS.thetaDeg, unit: '\u00B0', polLabels: true },
+    { id: 'thetaDeg', label: 'MW Ellipticity \u03C7',  min: 0,   max: 90,  step: 1,   default: PHYSICS_DEFAULTS.thetaDeg, unit: '\u00B0', polLabels: true },
+    { id: 'laserPolDeg', label: 'Laser Polarization \u03C6_L', min: 0, max: 180, step: 1, default: PHYSICS_DEFAULTS.laserPolDeg, unit: '\u00B0' },
     { id: 'gammaP',   label: 'Pumping Rate \u0393\u209A', min: 0, max: 20, step: 0.1, default: PHYSICS_DEFAULTS.gammaP,  unit: 'MHz' },
     { id: 'T1', label: 'T\u2081 Relaxation', min: -1, max: 2,  step: 0.01, default: Math.log10(PHYSICS_DEFAULTS.T1), log: true, unit: '\u03BCs' },
     { id: 'T2', label: 'T\u2082 Dephasing',  min: -3, max: 1,  step: 0.01, default: Math.log10(PHYSICS_DEFAULTS.T2), log: true, unit: '\u03BCs' },
