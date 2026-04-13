@@ -2,18 +2,14 @@
 // Entry point
 
 const {
-    computeSteadyState,
-    computeEnsembleSteadyState,
     computeODMRSpectrum,
     computeODMRSpectrumEnsemble,
-    computeBaseline,
     computeLinewidths,
     rateEquationsRHS,
 } = window.ODMRPhysics;
 const { integrate } = window.ODMRSolver;
 const {
-    initBarChart,
-    updateBarChart,
+    initEnergyLevels,
     initODMRSpectrum,
     updateODMRSpectrum,
     initTimeEvolution,
@@ -25,9 +21,16 @@ let showTimeEvolution = false;
 let spectrumTimer = null;
 const SPECTRUM_POINTS = 2400;
 
-function updateReadout(lw) {
+function updateReadout(lw, ensemble) {
     const el = document.getElementById('readout-text');
     if (!el) return;
+    if (ensemble) {
+        el.innerHTML =
+            `<span class="ro-label">Ensemble mode</span>` +
+            ` FWHM and contrast are orientation-dependent; use the spectrum ` +
+            `dips directly rather than the single-NV readout.`;
+        return;
+    }
     const fmt = v => v >= 1000 ? (v/1000).toFixed(2)+' GHz' : v.toFixed(1)+' MHz';
     el.innerHTML =
         `<span class="ro-label">|0\u27E9\u2194|+1\u27E9</span>` +
@@ -43,14 +46,9 @@ function fullUpdate() {
     const params = readParams();
     const ensemble = params.ensembleMode;
 
-    // Bar chart
-    const pops = ensemble ? computeEnsembleSteadyState(params) : computeSteadyState(params);
-    const baseline = computeBaseline(params);
-    updateBarChart('bar-chart', pops, baseline);
-
     // Linewidth readout
     const lw = computeLinewidths(params);
-    updateReadout(lw);
+    updateReadout(lw, ensemble);
 
     // ODMR spectrum (debounced)
     clearTimeout(spectrumTimer);
@@ -72,7 +70,7 @@ function fullUpdate() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initBarChart('bar-chart');
+    initEnergyLevels('energy-levels');
     initODMRSpectrum('odmr-spectrum');
     initTimeEvolution('time-evolution');
 

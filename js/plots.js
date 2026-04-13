@@ -31,6 +31,66 @@ const SPECTRUM_CONFIG = {
     modeBarButtonsToRemove: ['lasso2d', 'select2d', 'toggleSpikelines'],
 };
 
+// ─── Canonical NV energy-level diagram ───────────────────────────────────────
+
+function initEnergyLevels(divId) {
+    const el = document.getElementById(divId);
+    if (!el) return;
+    el.innerHTML = `
+        <div class="energy-figure">
+            <svg viewBox="0 0 900 500" class="energy-svg" aria-label="NV center energy level diagram">
+                <defs>
+                    <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="18" markerHeight="18" refX="10" refY="5" markerUnits="userSpaceOnUse" orient="auto">
+                        <path d="M0 0 L10 5 L0 10 z" fill="#2f7d32"></path>
+                    </marker>
+                    <marker id="arrow-red" viewBox="0 0 10 10" markerWidth="18" markerHeight="18" refX="10" refY="5" markerUnits="userSpaceOnUse" orient="auto">
+                        <path d="M0 0 L10 5 L0 10 z" fill="#d55a1f"></path>
+                    </marker>
+                    <marker id="arrow-black" viewBox="0 0 10 10" markerWidth="12" markerHeight="12" refX="10" refY="5" markerUnits="userSpaceOnUse" orient="auto">
+                        <path d="M0 0 L10 5 L0 10 z" fill="#222"></path>
+                    </marker>
+                </defs>
+                <text x="86" y="150" class="manifold-label">³E</text>
+                <text x="86" y="392" class="manifold-label">³A<tspan baseline-shift="sub" font-size="18">2</tspan></text>
+
+                <line x1="175" y1="118" x2="325" y2="118" class="energy-level"></line>
+                <line x1="175" y1="128" x2="325" y2="128" class="energy-level"></line>
+                <line x1="175" y1="220" x2="305" y2="220" class="energy-level"></line>
+
+                <line x1="175" y1="344" x2="325" y2="344" class="energy-level"></line>
+                <line x1="175" y1="354" x2="325" y2="354" class="energy-level"></line>
+                <line x1="165" y1="450" x2="262" y2="450" class="energy-level"></line>
+
+                <text x="338" y="112" class="level-mark">±1</text>
+                <text x="350" y="220" class="level-mark">0</text>
+                <text x="338" y="338" class="level-mark">±1</text>
+                <text x="350" y="450" class="level-mark">0</text>
+
+                <line x1="430" y1="300" x2="610" y2="300" class="singlet-level"></line>
+                <line x1="430" y1="300" x2="430" y2="338" class="shelf-leg"></line>
+                <line x1="430" y1="338" x2="610" y2="338" class="singlet-level"></line>
+                <line x1="514" y1="300" x2="514" y2="338" class="singlet-dashed"></line>
+
+                <text x="630" y="314" class="singlet-label">¹A<tspan baseline-shift="sub" font-size="18">1</tspan></text>
+                <text x="630" y="352" class="singlet-label">¹E</text>
+
+                <line x1="212" y1="450" x2="212" y2="62" class="pump-arrow" marker-end="url(#arrow-green)"></line>
+                <text x="54" y="285" class="pump-wavelength">532nm</text>
+
+                <line x1="250" y1="130" x2="250" y2="344" class="fl-arrow" marker-end="url(#arrow-red)"></line>
+                <line x1="276" y1="130" x2="276" y2="450" class="fl-arrow" marker-end="url(#arrow-red)"></line>
+
+                <path d="M325 128 L476 298" class="diag-solid" marker-end="url(#arrow-black)"></path>
+                <path d="M305 220 L470 298" class="diag-dotted" marker-end="url(#arrow-black)"></path>
+                <path d="M430 338 L332 349" class="diag-dotted" marker-end="url(#arrow-black)"></path>
+                <path d="M514 338 L286 446" class="diag-solid" marker-end="url(#arrow-black)"></path>
+
+                <path d="M388 346 C402 354, 402 450, 388 458" class="split-brace"></path>
+                <text x="424" y="408" class="split-big">2.87GHz</text>
+            </svg>
+        </div>`;
+}
+
 // ─── Bar chart ───────────────────────────────────────────────────────────────
 
 function initBarChart(divId) {
@@ -239,6 +299,7 @@ function _timeLayout() {
 }
 
 window.ODMRPlots = {
+    initEnergyLevels,
     initBarChart,
     updateBarChart,
     initODMRSpectrum,
