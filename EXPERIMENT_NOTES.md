@@ -46,6 +46,55 @@ The simulator uses this factor both for the optical pumping rate and as the rela
 - https://doi.org/10.1103/PhysRevB.76.165205
 - https://doi.org/10.1038/s41598-024-60199-z
 
+### Current implementation review
+
+Checked against the current online checkout (`origin/master`, commit
+`f00834d`) on 2026-04-08.
+
+Implemented behavior:
+
+- `js/physics.js` no longer treats the microwave as a scalar drive. The UI
+  slider `thetaDeg` sets a lab-frame circular-basis mixture:
+  `0 deg -> sigma+`, `45 deg -> linear x`, `90 deg -> sigma-`.
+- For each NV family, the lab-frame complex microwave vector is projected
+  into the local transverse basis `(e1, e2)`, and `Omega_+` / `Omega_-` are
+  computed from the local circular components.
+- `laserPolDeg` is a linearly polarized optical electric-field angle in the
+  lab `x-y` plane. It changes both the optical pump rate and the ensemble
+  brightness weight through `1 - (E_L . n_NV)^2`.
+- In single-NV mode, the linewidth and contrast readout is valid for the
+  displayed pair of resonances. In ensemble mode, those scalar values are not
+  representative because the eight resonances have different NV orientations,
+  microwave projections, optical weights and contrasts. The UI now reports
+  this instead of showing the single-NV readout in ensemble mode.
+
+Modeling assumptions to keep visible:
+
+- The `sigma+` / `sigma-` labels are lab-frame circular polarizations around
+  lab `z`, not a global selector for one NV transition. Each NV orientation
+  sees a different local circular decomposition after projection.
+- The microwave field is constrained to an ellipse in the lab `x-y` plane.
+  There is no UI control for MW azimuth, antenna-axis rotation, a longitudinal
+  `B1,z` component, or arbitrary complex `B1 = (Bx, By, Bz)`.
+- The optical polarization model covers only a fully linearly polarized laser
+  in the lab `x-y` plane. It does not yet include circular/elliptical optical
+  polarization, a partially unpolarized component, high-NA vectorial focusing,
+  or collection-polarization effects.
+- Ensemble population and spectrum averaging use the same optical factor for
+  pump-rate scaling and brightness weighting. This is reasonable for a compact
+  visualization, but a calibrated fluorescence model could split absorption,
+  emission collection efficiency and detector polarization into separate
+  factors.
+
+Possible future patches:
+
+- Add a `MW azimuth` slider or a small set of antenna presets before moving to
+  a full arbitrary complex-vector `B1` control.
+- Add an `optical unpolarized fraction` slider if the experimental excitation
+  is not purely linear.
+- Add ensemble-specific peak metrics if the readout should summarize the
+  strongest peak, integrated contrast, or per-orientation linewidths.
+
 ## Scaling Rule
 
 If a later calibration point is available, microwave power can be mapped with:
